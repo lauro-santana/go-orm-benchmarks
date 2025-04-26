@@ -10,7 +10,7 @@ const (
 	BatchSize            = 10000
 	PageSize             = 10
 	BulkInsertPageNumber = 100
-	FindOneLoop          = 150
+	FindOneLoop          = 1
 )
 
 var PostgresDSN string

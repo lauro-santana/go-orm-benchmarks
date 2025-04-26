@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS books (
+    id SERIAL PRIMARY KEY,
+    isbn VARCHAR(255) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    author VARCHAR(255) NOT NULL,
+    genre VARCHAR(255) NOT NULL,
+    quantity INTEGER NOT NULL,
+    publicized_at TIMESTAMP NOT NULL
+);

@@ -1,0 +1,20 @@
+DROP TABLE IF EXISTS price_policies;
+DROP TABLE IF EXISTS books;
+
+CREATE TABLE IF NOT EXISTS books (
+    id SERIAL PRIMARY KEY,
+    isbn VARCHAR(255) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    author VARCHAR(255) NOT NULL,
+    genre VARCHAR(255) NOT NULL,
+    quantity INTEGER NOT NULL,
+    publicized_at TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS price_policies (
+    id SERIAL PRIMARY KEY,
+    book_id INTEGER REFERENCES books(id) ON DELETE CASCADE,
+    price FLOAT NOT NULL,
+    start_date TIMESTAMP NOT NULL,
+    end_date TIMESTAMP NOT NULL
+);

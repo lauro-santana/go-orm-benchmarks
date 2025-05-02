@@ -2,15 +2,14 @@ package benchmark
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/lauro-santana/golang-orm-benchmarks/benchmark/utils"
 	"github.com/lauro-santana/golang-orm-benchmarks/model"
-
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
-	"github.com/uptrace/bun/driver/pgdriver"
 )
 
 type BunBenchmark struct {
@@ -23,8 +22,16 @@ func NewBunBenchmark() Benchmark {
 }
 
 func (o *BunBenchmark) Init() error {
-	sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(utils.PostgresDSN)))
+	config, err := pgx.ParseConfig(utils.PostgresDSN)
+	if err != nil {
+		panic(err)
+	}
+	config.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
+
+	sqldb := stdlib.OpenDB(*config)
 	o.db = bun.NewDB(sqldb, pgdialect.New())
+	// o.db.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
+
 	return nil
 }
 
@@ -43,7 +50,8 @@ func (o *BunBenchmark) Insert(b *testing.B) {
 		book.ID = 0
 		b.StartTimer()
 
-		_, err := o.db.NewInsert().Model(book).Exec(o.ctx)
+		_, err := o.db.NewInsert().Model(book).Table("books").
+			Exec(o.ctx)
 
 		b.StopTimer()
 		if err != nil {
@@ -66,7 +74,8 @@ func (o *BunBenchmark) InsertBulk(b *testing.B) {
 		}
 		b.StartTimer()
 
-		_, err := o.db.NewInsert().Model(&books).Exec(o.ctx)
+		_, err := o.db.NewInsert().Model(&books).Table("books").
+			Exec(o.ctx)
 
 		b.StopTimer()
 		if err != nil {
@@ -79,7 +88,8 @@ func (o *BunBenchmark) InsertBulk(b *testing.B) {
 func (o *BunBenchmark) Update(b *testing.B) {
 	book := model.NewBook()
 
-	_, err := o.db.NewInsert().Model(book).Exec(o.ctx)
+	_, err := o.db.NewInsert().Model(book).Table("books").
+		Exec(o.ctx)
 	if err != nil {
 		b.Error(err)
 	}
@@ -88,7 +98,8 @@ func (o *BunBenchmark) Update(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err = o.db.NewUpdate().Model(book).WherePK().Exec(o.ctx)
+		_, err = o.db.NewUpdate().Model(book).WherePK().Table("books").
+			Exec(o.ctx)
 
 		b.StopTimer()
 		if err != nil {
@@ -102,7 +113,8 @@ func (o *BunBenchmark) Delete(b *testing.B) {
 	n := b.N
 	books := model.NewBooks(n)
 
-	_, err := o.db.NewInsert().Model(&books).Exec(o.ctx)
+	_, err := o.db.NewInsert().Model(&books).Table("books").
+		Exec(o.ctx)
 	if err != nil {
 		b.Error(err)
 	}
@@ -117,7 +129,8 @@ func (o *BunBenchmark) Delete(b *testing.B) {
 		book.ID = books[i].ID
 		b.StartTimer()
 
-		_, err = o.db.NewDelete().Model(book).WherePK().Exec(o.ctx)
+		_, err = o.db.NewDelete().Model(book).WherePK().Table("books").
+			Exec(o.ctx)
 
 		b.StopTimer()
 		if err != nil {
@@ -139,7 +152,8 @@ func (o *BunBenchmark) FindByID(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		for range utils.FindOneLoop {
-			err = o.db.NewSelect().Model(book).Where("id = ?", book.ID).Scan(o.ctx)
+			err = o.db.NewSelect().Model(book).
+				Where("id = ?", book.ID).Limit(1).Scan(o.ctx)
 
 			b.StopTimer()
 			if err != nil {
@@ -152,7 +166,9 @@ func (o *BunBenchmark) FindByID(b *testing.B) {
 
 func (o *BunBenchmark) FindPage(b *testing.B) {
 	books := model.NewBooks(utils.BulkInsertPageNumber)
-	_, err := o.db.NewInsert().Model(&books).Exec(o.ctx)
+
+	_, err := o.db.NewInsert().Model(&books).Table("books").
+		Exec(o.ctx)
 	if err != nil {
 		b.Error(err)
 	}

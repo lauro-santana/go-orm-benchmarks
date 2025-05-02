@@ -1,23 +1,33 @@
-benchmark-insert: # Run insert benchmarks
-	docker compose up -d --no-recreate
-	go run main.go -operation insert
+# Run all benchmarks sequentially and save to results/ with timestamps
+benchmark-all: benchmark-insert benchmark-insert-bulk benchmark-update \
+              benchmark-delete benchmark-select-one benchmark-select-page
+	@echo "All benchmarks completed. Results saved to results/"
 
-benchmark-insert-bulk: # Run insert bulk benchmarks
-	docker compose up -d --no-recreate
-	go run main.go -operation insert-bulk
+# Create results directory if not exists
+results:
+	mkdir -p results
 
-benchmark-update: # Run update benchmarks
+# Generic benchmark runner with output redirection
+benchmark-insert: results
 	docker compose up -d --no-recreate
-	go run main.go -operation update
+	go run main.go -operation insert | tee results/insert-$(shell date +%Y%m%d-%H%M%S).log
 
-benchmark-delete: # Run delete benchmarks
+benchmark-insert-bulk: results
 	docker compose up -d --no-recreate
-	go run main.go -operation delete
+	go run main.go -operation insert-bulk | tee results/insert-bulk-$(shell date +%Y%m%d-%H%M%S).log
 
-benchmark-select-one: # Run select one benchmarks
+benchmark-update: results
 	docker compose up -d --no-recreate
-	go run main.go -operation select-one
+	go run main.go -operation update | tee results/update-$(shell date +%Y%m%d-%H%M%S).log
 
-benchmark-select-page: # Run select page benchmarks
+benchmark-delete: results
 	docker compose up -d --no-recreate
-	go run main.go -operation select-page
+	go run main.go -operation delete | tee results/delete-$(shell date +%Y%m%d-%H%M%S).log
+
+benchmark-select-one: results
+	docker compose up -d --no-recreate
+	go run main.go -operation select-one | tee results/select-one-$(shell date +%Y%m%d-%H%M%S).log
+
+benchmark-select-page: results
+	docker compose up -d --no-recreate
+	go run main.go -operation select-page | tee results/select-page-$(shell date +%Y%m%d-%H%M%S).log
